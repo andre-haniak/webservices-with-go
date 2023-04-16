@@ -46,7 +46,6 @@ func loadProductMap() (map[int]Product, error) {
 }
 
 func getProduct(productID int) *Product {
-	fmt.Println("Passei aqui!!!")
 	productMap.RLock()
 	defer productMap.RUnlock()
 	if product, ok := productMap.m[productID]; ok {
@@ -67,7 +66,7 @@ func getProductList() []Product {
 	for _, value := range productMap.m {
 		products = append(products, value)
 	}
-	productMap.Unlock()
+	productMap.RUnlock()
 	return products
 }
 
@@ -92,7 +91,7 @@ func addOrUpdateProduct(product Product) (int, error) {
 	if product.ProductID > 0 {
 		oldProduct := getProduct(product.ProductID)
 		if oldProduct == nil {
-			return 0, fmt.Errorf("product with id [%d] does not exist", product.ProductID)
+			return 0, fmt.Errorf("product with id [%d] doesn't exist", product.ProductID)
 		}
 		addOrUpdateID = product.ProductID
 	} else {
