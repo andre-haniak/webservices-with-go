@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/andre-haniak/webservices-with-go/products"
 )
 
 func middlewareHandler(handler http.Handler) http.Handler {
@@ -15,6 +17,10 @@ func middlewareHandler(handler http.Handler) http.Handler {
 	})
 }
 
+const apiBasePath = "/api"
+
 func main() {
+	products.SetupRoutes(apiBasePath)
+
 	http.ListenAndServe(":5000", nil)
 }
