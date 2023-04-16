@@ -1,4 +1,4 @@
-package products
+package product
 
 import (
 	"encoding/json"
@@ -13,13 +13,11 @@ import (
 var productMap = struct {
 	sync.RWMutex
 	m map[int]Product
-}{
-	m: make(map[int]Product),
-}
+}{m: make(map[int]Product)}
 
 func init() {
 	fmt.Println("Loading products...")
-	prodMap, err := loadProductsMap()
+	prodMap, err := loadProductMap()
 	productMap.m = prodMap
 	if err != nil {
 		log.Fatal(err)
@@ -27,7 +25,7 @@ func init() {
 	fmt.Printf("%d products loaded...\n", len(productMap.m))
 }
 
-func loadProductsMap() (map[int]Product, error) {
+func loadProductMap() (map[int]Product, error) {
 	fileName := "products.json"
 	_, err := os.Stat(fileName)
 	if os.IsNotExist(err) {
@@ -47,10 +45,11 @@ func loadProductsMap() (map[int]Product, error) {
 	return prodMap, nil
 }
 
-func getProduct(ProductID int) *Product {
+func getProduct(productID int) *Product {
+	fmt.Println("Passei aqui!!!")
 	productMap.RLock()
 	defer productMap.RUnlock()
-	if product, ok := productMap.m[ProductID]; ok {
+	if product, ok := productMap.m[productID]; ok {
 		return &product
 	}
 	return nil
