@@ -1,6 +1,7 @@
 package product
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,6 +9,8 @@ import (
 	"os"
 	"sort"
 	"sync"
+
+	"github.com/andre-haniak/webservices-with-go/database"
 )
 
 var productMap = struct {
@@ -45,13 +48,32 @@ func loadProductMap() (map[int]Product, error) {
 	return prodMap, nil
 }
 
-func getProduct(productID int) *Product {
+func getProduct(productID int) (*Product, error) {
+	row := database.DBconn.QueryRow(`SELECT productId,
+	manufacturer,
+	sku, 
+	upc, 
+	pricePerUnit, 
+	quantityOnHand, 
+	productName 
+	FROM products
+	WHERE productId = ?`, productID)
+	product := &Product{}
+	err := row.Scan(
+		&product.ProductID,
+		&product.Manufacturer,
+		&product.Sku,
+		&product.Upc,
+		&product.PricePerUnit,
+		&product.QuantityOnHand,
+		&product.ProductName)
 	productMap.RLock()
-	defer productMap.RUnlock()
-	if product, ok := productMap.m[productID]; ok {
-		return &product
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
 	}
-	return nil
+	return product, nil
 }
 
 func removeProduct(ProductID int) {
@@ -60,14 +82,36 @@ func removeProduct(ProductID int) {
 	delete(productMap.m, ProductID)
 }
 
-func getProductList() []Product {
-	productMap.RLock()
-	products := make([]Product, 0, len(productMap.m))
-	for _, value := range productMap.m {
-		products = append(products, value)
+func getProductList() ([]Product, error) {
+	results, err := database.DBconn.Query(`SELECT productId,
+	manufacturer,
+	sku, 
+	upc, 
+	pricePerUnit, 
+	quantityOnHand, 
+	productName 
+	FROM products`)
+	if err != nil {
+		return nil, err
 	}
-	productMap.RUnlock()
-	return products
+	defer results.Close()
+	products := make([]Product, 0)
+	for results.Next() {
+		var product Product
+		err = results.Scan(
+			&product.ProductID,
+			&product.Manufacturer,
+			&product.Sku,
+			&product.Upc,
+			&product.PricePerUnit,
+			&product.QuantityOnHand,
+			&product.ProductName)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+	return products, nil
 }
 
 func getProductIds() []int {
@@ -89,7 +133,10 @@ func getNextProductID() int {
 func addOrUpdateProduct(product Product) (int, error) {
 	addOrUpdateID := -1
 	if product.ProductID > 0 {
-		oldProduct := getProduct(product.ProductID)
+		oldProduct, err := getProduct(product.ProductID)
+		if err != nil {
+			return addOrUpdateID, err
+		}
 		if oldProduct == nil {
 			return 0, fmt.Errorf("product with id [%d] doesn't exist", product.ProductID)
 		}

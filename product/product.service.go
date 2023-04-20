@@ -16,7 +16,11 @@ const productsBasePath = "products"
 func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		productList := getProductList()
+		productList, err := getProductList()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		productsJSON, err := json.Marshal(productList)
 		if err != nil {
 			log.Fatal(err)
@@ -61,7 +65,11 @@ func ProductHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case http.MethodGet:
-		product := getProduct(ProductID)
+		product, err := getProduct(ProductID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		if product == nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
